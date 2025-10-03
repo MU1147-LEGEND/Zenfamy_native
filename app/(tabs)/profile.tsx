@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
     ScrollView,
@@ -9,6 +8,7 @@ import {
     View,
 } from "react-native";
 import { ThemedText } from "../../components/themed-text";
+import { checkAuth, logout } from "../../utils/auth";
 
 type UserData = {
     user_id?: number;
@@ -38,7 +38,12 @@ export default function UserProfile() {
 
     // load first time
     useEffect(() => {
-        loadUserInfo();
+        (async () => {
+            const token = await checkAuth();
+            if (token) {
+                loadUserInfo();
+            }
+        })();
     }, []);
 
     const handleSave = async () => {
@@ -74,7 +79,7 @@ export default function UserProfile() {
 
             if (!response.ok) {
                 const errorMessage =
-                    data.detail || data.message || "Failed to update user data";
+                    data.detail || "Failed to update user data";
                 throw new Error(errorMessage);
             }
 
@@ -141,18 +146,7 @@ export default function UserProfile() {
     };
 
     const handleLogout = async () => {
-        try {
-            // clear stored data (from async storage)
-            await Promise.all([
-                AsyncStorage.removeItem("userToken"),
-                AsyncStorage.removeItem("refreshToken"),
-                AsyncStorage.removeItem("userEmail"),
-            ]);
-            // go to login
-            router.replace("/login");
-        } catch (error) {
-            return error;
-        }
+        await logout();
     };
 
     return (
@@ -210,12 +204,14 @@ export default function UserProfile() {
                 </View>
 
                 <View style={styles.infoItem}>
+                    {/* Keeping unchange while user editing his info */}
                     <ThemedText style={styles.label}>Email</ThemedText>
                     <ThemedText style={styles.value}>
                         {userInfo.email}
                     </ThemedText>
                 </View>
 
+                {/* facing issue while editing the field. */}
                 <View style={styles.infoItem}>
                     <ThemedText style={styles.label}>Role</ThemedText>
                     <ThemedText style={styles.value}>
